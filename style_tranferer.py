@@ -14,6 +14,7 @@ import tensorflow as tf
 from keras                    import backend
 from keras.models             import Model
 from keras.applications.vgg16 import VGG16    # Image classification CNN
+from keras.layers             import Input, Concatenate
 
 # Scipy
 from scipy.optimize import fmin_l_bfgs_b      # Minimization function
@@ -44,16 +45,24 @@ def main():
   ts_arr    = normalize_rgb(ts_arr, ts_rgb)
 
   # Create Keras variables
-  c_img     = tf.Variable(tc_arr)  
-  s_img     = tf.Variable(ts_arr)  
+  input_shape = (width, height, 3)
+  c_img = Input(shape=input_shape)
+  s_img = Input(shape=input_shape)
   combo_img = tf.Variable(np.zeros_like(tc_arr))
 
   # Input tensor:
   # - Matrix combination of content image, style image, and combo image 
   #   along the batch axis (axis 0).
   # - Represents a batch of three images that will be passed thru the VGG16 CNN
-  in_tensor = tf.concat([c_img, s_img, combo_img], axis=0)
+  in_tensor = Concatenate(axis=0)([c_img, s_img, combo_img])
   print(in_tensor.shape)
+
+  # CNN Model
+  # - Note: dont need the last layers since we arent classifying
+  model   = VGG16(input_tensor=in_tensor, weights='imagenet', include_top=False)
+  layers  = dict([(layer.name, layer.output) for layer in model.layers])
+  for l in layers:
+    print(f"{layers[l]}\n")
 
 # Helper Functions #
 def get_image(image_path, width=512, height=512):
