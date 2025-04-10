@@ -5,13 +5,13 @@
 
 # Imports #
 import numpy as np
+import torch
 
 # Image processing
 from PIL import Image                         # Image processing
 
 # Keras
 import tensorflow as tf
-from keras                    import backend
 from keras.models             import Model
 from keras.applications.vgg16 import VGG16    # Image classification CNN
 from keras.layers             import Input, Concatenate
@@ -21,6 +21,8 @@ from scipy.optimize import fmin_l_bfgs_b      # Minimization function
 
 # Imageio
 import imageio
+
+import pprint
 
 # Demo
 def main():
@@ -49,20 +51,33 @@ def main():
   c_img = Input(shape=input_shape)
   s_img = Input(shape=input_shape)
   combo_img = tf.Variable(np.zeros_like(tc_arr))
+  loss  = Input(shape=(1,))
 
   # Input tensor:
   # - Matrix combination of content image, style image, and combo image 
   #   along the batch axis (axis 0).
   # - Represents a batch of three images that will be passed thru the VGG16 CNN
   in_tensor = Concatenate(axis=0)([c_img, s_img, combo_img])
-  print(in_tensor.shape)
+  # print(in_tensor.shape)
 
   # CNN Model
   # - Note: dont need the last layers since we arent classifying
   model   = VGG16(input_tensor=in_tensor, weights='imagenet', include_top=False)
   layers  = dict([(layer.name, layer.output) for layer in model.layers])
-  for l in layers:
-    print(f"{layers[l]}\n")
+  pprint.pprint(layers)
+    
+  # WEIGHTS # TODO: TUNE ME
+  c_weight = 0.025
+  s_weight = 5.0
+  total_variation_weight = 1.0
+
+  # print(layers['block2_conv2'])
+
+  # CONTENT LOSS #
+  layer_features    = layers['block2_conv2']
+  content_features  = layer_features[0, :, :, :]
+  combo_features    = layer_features[2, :, :, :]
+  loss += c_weight * content_loss(content_features, combo_features)
 
 # Helper Functions #
 def get_image(image_path, width=512, height=512):
@@ -135,6 +150,13 @@ def normalize_rgb(image_arr, avg_rgbs):
   # Todo: necessary?
   image_arr = image_arr[:, :, :, ::-1]
   return image_arr
+
+def content_loss(content, combination):
+  '''
+  Function to calculate the loss wrt the content
+  '''
+  loss =   tf.keras.metrics.Sum().update_state((combination - content) ** 2).result()
+  return loss
 
 if __name__ == "__main__":
   main()
