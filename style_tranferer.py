@@ -1,30 +1,27 @@
-###################
-# Style Transferer
-# TODO: Document
-##################
+#############################
+#      Style Transferer     #
+#---------------------------#
+# @author: alcoope8@asu.edu #
+# @author: rahutch6@asu.edu #
+#############################
 
 # Imports #
 import numpy as np
-import torch
 
 # Image processing
 from PIL import Image                         # Image processing
 
-# Keras
-import tensorflow as tf
-from keras.models             import Model
-from keras.applications.vgg16 import VGG16    # Image classification CNN
-from keras.layers             import Input, Concatenate
+# Torch
+import torch
+import torchvision.models as models
 
 # Scipy
 from scipy.optimize import fmin_l_bfgs_b      # Minimization function
 
 # Imageio
 import imageio
-
 import pprint
 
-# Demo
 def main():
 
   # Useful Constants
@@ -39,33 +36,42 @@ def main():
   # Convert the images to 4D arrays for the CNN to use
   tc_arr, tc_rgb = img_2_arr(test_content_image)
   ts_arr, ts_rgb = img_2_arr(test_style_image)
-  # print(tc_arr.shape)
-  # print(ts_arr.shape)
 
   # Normalize the RGB values of each image
   tc_arr    = normalize_rgb(tc_arr, tc_rgb)
   ts_arr    = normalize_rgb(ts_arr, ts_rgb)
 
-  # Create Keras variables
-  input_shape = (width, height, 3)
-  c_img = Input(shape=input_shape)
-  s_img = Input(shape=input_shape)
-  combo_img = tf.Variable(np.zeros_like(tc_arr))
-  loss  = Input(shape=(1,))
+  # Create Torch Tensors
+  input_shape   = (width, height, 3)
+  c_img         = torch.from_numpy(tc_arr.copy())   # Content Image Tensor
+  s_img         = torch.from_numpy(ts_arr.copy())   # Style Image Tensor
+  combo_img     = torch.empty_like(c_img)           # Combined Image Tensor
+  # loss  = Input(shape=(1,))
+
+  # Instantiate the VGG CNN Model
+  model_outputs = {} # Dict to store intermediate level outputs
+  vgg16         = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+  vgg16.eval()
+
+  # Define a hook to get the output of the 8th layer
+  def hook(module, input, output):
+    ''' Hook function to get the output of the 8th layer (4th ReLU) '''
+    model_outputs['block2_conv2'] = output
+
+  # Register the hook
+  b2_c2_hook  = vgg16.features[8].register_forward_hook(hook)
+
+  # Poke the model with a dummy input to get something populated in the dict
+  dummy_input = torch.randn(3, 3, 512, 512)
+  _ = vgg16(dummy_input)
+  # print("block2_conv2 activation shape:", model_outputs['block2_conv2'].shape)
 
   # Input tensor:
-  # - Matrix combination of content image, style image, and combo image 
-  #   along the batch axis (axis 0).
+  # - Matrix of content image, style image, and combo image along the batch axis (0).
   # - Represents a batch of three images that will be passed thru the VGG16 CNN
-  in_tensor = Concatenate(axis=0)([c_img, s_img, combo_img])
+  in_tensor = torch.cat([c_img, s_img, combo_img], dim=0)
   # print(in_tensor.shape)
 
-  # CNN Model
-  # - Note: dont need the last layers since we arent classifying
-  model   = VGG16(input_tensor=in_tensor, weights='imagenet', include_top=False)
-  layers  = dict([(layer.name, layer.output) for layer in model.layers])
-  pprint.pprint(layers)
-    
   # WEIGHTS # TODO: TUNE ME
   c_weight = 0.025
   s_weight = 5.0
@@ -74,12 +80,13 @@ def main():
   # print(layers['block2_conv2'])
 
   # CONTENT LOSS #
-  layer_features    = layers['block2_conv2']
-  content_features  = layer_features[0, :, :, :]
-  combo_features    = layer_features[2, :, :, :]
-  loss += c_weight * content_loss(content_features, combo_features)
+  # layer_features    = layers['block2_conv2']
+  # content_features  = layer_features[0, :, :, :]
+  # combo_features    = layer_features[2, :, :, :]
+  # loss += c_weight * content_loss(content_features, combo_features)
 
 # Helper Functions #
+
 def get_image(image_path, width=512, height=512):
   '''
   Function to retrieve and resize the image located at the filepath.  
@@ -109,7 +116,7 @@ def save_image(image, filename, filetype="PNG"):
 def img_2_arr(image):
   '''
   Function to convert images into a good form for processing.  
-  Converts images to 4d numpy arrays of the form (batch size, height, width, channels)  
+  Converts images to 4d numpy arrays of the form (batch size, channels, height, width)  
   Batch size will be one since each image is one thing.  
   Also extracts the mean R, G, and B value for the supplied image. 
   Channels will be 3 for R, G, and B  
@@ -118,6 +125,7 @@ def img_2_arr(image):
   '''
   # Formatting
   formatted_array = np.asarray(image, dtype='float32')      # (height, width, channels)
+  formatted_array = formatted_array.transpose(2, 0, 1)
   formatted_array = np.expand_dims(formatted_array, axis=0) # (batch size, height, width, channels)
 
   # Avg RBG 
@@ -144,19 +152,19 @@ def normalize_rgb(image_arr, avg_rgbs):
 
   # Assumes image_arr has 3 channels
   for i in range(3):
-    image_arr[:, :, :, i] -= avg_rgbs[i]
+    image_arr[:, i, :, :] -= avg_rgbs[i]
 
   # Flip image to BGR as in the paper
   # Todo: necessary?
-  image_arr = image_arr[:, :, :, ::-1]
+  image_arr = image_arr[:, ::-1, :, :]
   return image_arr
 
-def content_loss(content, combination):
-  '''
-  Function to calculate the loss wrt the content
-  '''
-  loss =   tf.keras.metrics.Sum().update_state((combination - content) ** 2).result()
-  return loss
+# def content_loss(content, combination):
+#   '''
+#   Function to calculate the loss wrt the content
+#   '''
+#   loss =   tf.keras.metrics.Sum().update_state((combination - content) ** 2).result()
+#   return loss
 
 if __name__ == "__main__":
   main()
