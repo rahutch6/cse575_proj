@@ -4,13 +4,13 @@ import pathlib
 import random
 import shutil
 
-img_dir = '.\\img_recog\\flower_photos' 
+img_dir = '.\\image_recog_src\\flower_photos' 
 img_dir = pathlib.Path(img_dir)
-tst_dir = '.\\img_recog\\test\\'
-trval_dir = '.\\img_recog\\train_validate\\'
-roses = list(img_dir.glob('roses/*')) 
+tst_dir = '.\\image_recog_src\\test\\'
+trval_dir = '.\\image_recog_src\\train_validate\\'
 print('DO NOT RUN THIS AGAIN UNLESS YOU HAVE REMOVED THE TEST AND TRAIN_VALIDATE DATA IN THE IMAGE FOLDERS')
 exit()
+roses = list(img_dir.glob('roses/*')) 
 for i in range(len(roses)):
     inPath = str(img_dir) +'\\roses\\'+ str(roses[i]).split('\\')[-1]
     ran = random.random()
