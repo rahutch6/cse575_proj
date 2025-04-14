@@ -111,61 +111,47 @@ def main():
   grads     = torch.autograd.grad(loss, combo_img)[0]
   outputs   = [loss]
   outputs  += grads
-  f_outputs = vgg16(combo_img)
 
-  # Defining the evaluator class
   def eval_loss_and_grads(x):
-    """
-    Given a flattened numpy array x representing the combination image,
-    update combo_img, run a forward-backward pass through vgg16 to compute loss and gradients,
-    and return the loss (as a float) and flattened gradients as a numpy array.
-    """
+    '''
+    Given a flattened numpy array x representing the combination image, update combo_img, 
+    run a forward-backward pass through vgg16 to compute loss and gradients,
+    and return the loss and flattened gradients as a numpy array.
+    '''
+
     # Reshape x into a tensor of shape (1, 3, height, width)
     x_tensor = torch.from_numpy(x.reshape((1, 3, height, width))).to(combo_img.device).float()
 
-    # Update combo_img with the new values (use no_grad to avoid tracking this assignment)
     with torch.no_grad():
         combo_img.copy_(x_tensor)
 
-    # Zero out existing gradients on combo_img (if any)
     if combo_img.grad is not None:
         combo_img.grad.zero_()
 
-    # Clear previously stored activations from the hooks
-    layer_outputs.clear()
+    layer_outputs.clear()     # Clear previously stored activations from the hooks
 
-    # Rebuild the input tensor with the updated combo_img
     new_in_tensor = torch.cat([c_img, s_img, combo_img], dim=0)
-
-    # Forward pass through VGG16
     vgg16(new_in_tensor)
 
-    # Recompute the total loss
     current_loss = torch.zeros(1).to(combo_img.device)
 
-    # -- Content Loss from block2_conv2 --
-    lf = layer_outputs['block2_conv2']  # lf has shape (3, C, H_feat, W_feat) where 0: content, 1: style, 2: combination
+    # -- Content Loss from block2_conv2 -- #
+    lf = layer_outputs['block2_conv2']
     current_loss += c_weight * content_loss(lf[0], lf[2])
 
-    # -- Style Loss from each selected layer --
+    # -- Style Loss from each selected layer -- #
     for layer in layers:
         lf = layer_outputs[layer]
-        # lf[1] corresponds to the style image and lf[2] to the combination image for that layer
         current_loss += (s_weight / len(layers)) * style_loss(lf[1], lf[2])
 
-    # -- Total Variation Loss on combo_img --
+    # -- Total Variation Loss on combo_img -- #
     current_loss += total_variation_weight * total_variation_loss(combo_img)
 
-    # Backward pass: compute gradients for combo_img
+    # compute gradients for combo_img
     current_loss.backward()
-
-    # Extract gradients as a flattened numpy array (make sure they are on CPU)
     grad_vals = combo_img.grad.cpu().numpy().flatten().astype('float64')
-
-    # Return the loss value (as a Python float) and the gradient values as a numpy array
     return current_loss.item(), grad_vals
   
-
   # TODO: Document
   class Evaluator(object):
 
@@ -201,16 +187,6 @@ def main():
 
   output_img = inverse_image_transform(x, tc_rgb)
   save_image(output_img, "styled")
-
-# Helper Functions #
-# def eval_loss_and_grads(x, f_outputs):
-#   ''' Function to compute loss and gradient '''
-#   x         = x.reshape((1, 3, height, width))
-#   outs      = f_outputs[x]
-#   loss_val  = outs[0]
-#   grad_vals = outs[1].flatten().astype('float64')
-#   return loss_val, grad_vals
-
 
 def total_variation_loss(x):
   a = (x[:, :, :height-1, :width-1] - x[:, :, 1:, :width-1])  ** 2  # Differences along vertical direction
@@ -312,7 +288,6 @@ def normalize_rgb(image_arr, avg_rgbs):
   @returns: 4d numpy array
   '''
 
-  # Assumes image_arr has 3 channels
   for i in range(3):
     image_arr[:, i, :, :] -= avg_rgbs[i]
 
@@ -321,39 +296,15 @@ def normalize_rgb(image_arr, avg_rgbs):
   image_arr = image_arr[:, ::-1, :, :]
   return image_arr
 
-# def inverse_image_transform(image, avg_rgbs):
-#   ''' Convert the image back to normal '''
-
-#   if isinstance(image, np.ndarray):
-#     image = torch.from_numpy(image)
-
-#   if image.ndim == 4:
-#     image = image.squeeze(0)
-  
-#   image = image.clone()
-#   image = image.permute(1, 2, 0)  # (H, W, C)
-#   image = image.cpu().numpy()
-#   image = image[:, :, ::-1]  # Reverse channel order (BGR to RGB)
-
-#   # Add back in the mean rgb vals
-#   image[:, :, 0] = avg_rgbs[0]
-#   image[:, :, 1] = avg_rgbs[1]
-#   image[:, :, 2] = avg_rgbs[2]
-  
-#   image = np.clip(image, 0, 255).astype('uint8')
-#   return Image.fromarray(image)
-
 def inverse_image_transform(image, avg_rgbs):
-    ''' Convert the image (flattened or not) back to a PIL Image '''
-    # If a numpy array is passed, convert it to a torch tensor.
+    ''' Convert the image in array form back to a PIL Image '''
+
     if isinstance(image, np.ndarray):
         image = torch.from_numpy(image)
     
-    # If the tensor is 1D (flattened), reshape it.
     if image.dim() == 1:
         image = image.view(1, 3, height, width)
     elif image.dim() == 4:
-        # Otherwise, assume it already has a batch dimension.
         image = image
     else:
         raise ValueError("Unexpected image tensor dimensions")
@@ -366,11 +317,9 @@ def inverse_image_transform(image, avg_rgbs):
     
     # Permute from (C, H, W) to (H, W, C)
     image = image.permute(1, 2, 0)
-    
-    # Move to CPU and convert to a numpy array.
     image = image.cpu().numpy()
     
-    # Reverse channel order (BGR to RGB)
+    # Re-Reverse channel order (BGR to RGB)
     image = image[:, :, ::-1]
     
     # Add back the mean RGB values
@@ -382,8 +331,6 @@ def inverse_image_transform(image, avg_rgbs):
     image = np.clip(image, 0, 255).astype('uint8')
     
     return Image.fromarray(image)
-
-
 
 if __name__ == "__main__":
   main()
