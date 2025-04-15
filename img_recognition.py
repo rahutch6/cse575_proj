@@ -8,95 +8,89 @@ from tensorflow import keras
 from tensorflow.keras import layers 
 from tensorflow.keras.models import Sequential 
 
+import dataset_maker as ds
+
 import pathlib
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
+img_dir           = '.\\image_recog_src\\train_validate' 
+img_dir           = pathlib.Path(img_dir)
+image_count       = len(list(img_dir.glob('*/*.jpg'))) 
 
-# dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
-# img_dir = tf.keras.utils.get_file('flower_photos', origin=dataset_url, untar=True)
-img_dir = '.\\img_recog\\flower_photos' 
-img_dir = pathlib.Path(img_dir)
-image_count = len(list(img_dir.glob('*/*.jpg'))) 
-# roses = list(img_dir.glob('roses/*')) 
-# img = PIL.Image.open(str(roses[0]))
-# img.show()
+train_ds          = ds.train_ds
+val_ds            = ds.val_ds
+sparse_tr_ds      = ds.sparse_tr_ds
+sparse_val_ds     = ds.sparse_val_ds
+gen_tr_ds         = ds.gen_tr_ds
+gen_val_ds        = ds.gen_val_ds
+test_ds           = ds.test_ds
 
-# # Training split 
-train_ds = tf.keras.utils.image_dataset_from_directory( 
-	img_dir, 
-	validation_split=0.2, 
-	subset="training", 
-	seed=150, 
-	image_size=(256, 256), 
-	batch_size=32) 
-
-val_ds = tf.keras.utils.image_dataset_from_directory( 
-    img_dir, 
-    validation_split=0.2, 
-    subset="validation", 
-    seed=150, 
-    image_size=(256,256), 
-    batch_size=32)
-class_names = train_ds.class_names 
-
-# plt.figure(figsize=(10, 10)) 
-
-# for images, labels in train_ds.take(1): 
-# 	for i in range(25): 
-# 		ax = plt.subplot(5, 5, i + 1) 
-# 		plt.imshow(images[i].numpy().astype("uint8")) 
-# 		plt.title(class_names[labels[i]]) 
-# 		plt.axis("off") 
-
-num_classes = len(class_names) 
+num_classes=len(train_ds.class_names)
 
 model = Sequential([ 
-	layers.Rescaling(1./255, input_shape=(256,256, 3)), 
-	layers.Conv2D(16, 3, padding='same', activation='relu'), 
-	layers.MaxPooling2D(), 
-	layers.Conv2D(32, 3, padding='same', activation='relu'), 
-	layers.MaxPooling2D(), 
-	layers.Conv2D(64, 3, padding='same', activation='relu'), 
-	layers.MaxPooling2D(), 
-	layers.Flatten(), 
-	layers.Dense(128, activation='relu'), 
-	layers.Dense(num_classes) 
+  layers.Rescaling(1./255, input_shape=(256,256, 3)), 
+  layers.Conv2D(16, 3, padding='same', activation='relu'), 
+  layers.MaxPooling2D(), 
+  layers.Conv2D(32, 3, padding='same', activation='relu'), 
+  layers.MaxPooling2D(), 
+  layers.Conv2D(64, 3, padding='same', activation='relu'), 
+  layers.MaxPooling2D(), 
+  layers.Flatten(), 
+  layers.Dense(128, activation='relu'), 
+  layers.Dense(num_classes) 
 ]) 
 
-model.compile(optimizer='adam', 
-			loss=tf.keras.losses.SparseCategoricalCrossentropy( 
-				from_logits=True), 
-			metrics=['accuracy']) 
-model.summary() 
-
 epochs=10
+
+print(f'\033[92mtraining the full dataset...\033[0m')
+model.compile(optimizer='adam', 
+      loss=tf.keras.losses.SparseCategoricalCrossentropy( 
+        from_logits=True), 
+      metrics=['accuracy']) 
+
 history = model.fit( 
     train_ds, 
     validation_data=val_ds, 
-    epochs=epochs 
-    ) 
-#Accuracy 
-acc = history.history['accuracy'] 
-val_acc = history.history['val_accuracy'] 
+    epochs=epochs,
+    verbose=2
+) 
+print(f'\033[93mtesting the full dataset...\033[0m')
 
-#loss 
-loss = history.history['loss'] 
-val_loss = history.history['val_loss'] 
+full_result = model.evaluate(test_ds, verbose=2)
 
-#epochs 
-epochs_range = range(epochs) 
+#=============================================================================
+print(f'\033[92mtraining the sparse dataset...\033[0m')
+model.compile(optimizer='adam', 
+      loss=tf.keras.losses.SparseCategoricalCrossentropy( 
+        from_logits=True), 
+      metrics=['accuracy']) 
 
-#Plotting graphs 
-plt.figure(figsize=(8, 8)) 
-plt.subplot(1, 2, 1) 
-plt.plot(epochs_range, acc, label='Training Accuracy') 
-plt.plot(epochs_range, val_acc, label='Validation Accuracy') 
-plt.legend(loc='lower right') 
-plt.title('Training and Validation Accuracy') 
+history = model.fit( 
+    sparse_tr_ds, 
+    validation_data=sparse_val_ds, 
+    epochs=epochs,
+    verbose=2
+) 
+print(f'\033[93mtesting the sparse dataset...\033[0m')
+sparse_result = model.evaluate(test_ds, verbose=2)
+#=============================================================================
+print(f'\033[92mtraining the generated dataset...\033[0m')
 
-plt.subplot(1, 2, 2) 
-plt.plot(epochs_range, loss, label='Training Loss') 
-plt.plot(epochs_range, val_loss, label='Validation Loss') 
-plt.legend(loc='upper right') 
-plt.title('Training and Validation Loss') 
-plt.show() 
+model.compile(optimizer='adam', 
+      loss=tf.keras.losses.SparseCategoricalCrossentropy( 
+        from_logits=True), 
+      metrics=['accuracy']) 
+history = model.fit( 
+    gen_tr_ds, 
+    validation_data=gen_val_ds, 
+    epochs=epochs,
+    verbose=2
+) 
+
+print(f'\033[93mtesting the generated dataset...\033[0m')
+generated_result = model.evaluate(test_ds, verbose=2)
+
+#=============================================================================
+print(f'\033[95mfull data set test accuracy = {full_result[1]}\033[0m')
+print(f'\033[95msparse data set test accuracy = {sparse_result[1]}\033[0m')
+print(f'\033[95mgenerated data set test accuracy = {generated_result[1]}\033[0m')
