@@ -34,16 +34,18 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--content_image' , '-ci' , type=str                  , help="Path to content image"  )
   parser.add_argument('--style_image'   , '-si' , type=str                  , help="Path to style image"    )
+  parser.add_argument('--img_out'       , '-io' , type=str,   default="image_out/out", help="Path to output image")
   parser.add_argument('--iterations'    , '-itr', type=int,   default=10    , help="Num iterations to train")
   parser.add_argument('--content_weight', '-cw' , type=float, default=0.025 , help="Num iterations to train")
   parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="Num iterations to train")
   parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="Num iterations to train")
   args = parser.parse_args()
   validate_args(args)
-
+  print("\n----- Running Style Transfer -----")
   # Get the images
   raw_content_image   = get_image(args.content_image, width, height)
   raw_style_image     = get_image(args.style_image, width, height)
+  print("\tAcquired content and style images")
   # save_image(raw_style_image, "tst_style")
 
   # Convert the images to 4D arrays for the CNN to use
@@ -60,7 +62,7 @@ def main():
   combo_img           = torch.empty_like(c_img)           # Combined Image Tensor
   combo_img.requires_grad_()
   loss                = torch.zeros(1)                    # Loss Tensor
-
+  print("\tCreated tensors")
   # Input tensor:
   # - Matrix of content image, style image, and combo image along the batch axis (0).
   # - Represents a batch of three images that will be passed thru the VGG16 CNN
@@ -93,9 +95,11 @@ def main():
   # Register the hook for each relevant layer
   for layer_name, idx in layers.items():
     vgg16.features[idx].register_forward_hook(get_activation(layer_name))
+  print("\tRegistered Model Hooks")
 
   # Send in the input tensor
   vgg16(in_tensor) # ; print("block2_conv2 activation shape:", layer_outputs['block5_conv3'].shape)
+  print("\tTensor fed to model")
 
   # WEIGHTS # TODO: TUNE ME
   c_weight                = args.content_weight
@@ -118,6 +122,7 @@ def main():
   
   # VARIATION LOSS #
   loss += total_variation_weight * total_variation_loss(combo_img)
+  print("\tLoss Calculated")
 
   # GRADIENT #
   grads     = torch.autograd.grad(loss, combo_img)[0]
@@ -188,15 +193,15 @@ def main():
   x = np.random.uniform(0, 255, (1, 3, height, width)) - 128
 
   for i in range(args.iterations):
-    print('Start of iteration', i)
+    print('\t\tStart of iteration', i)
     start_time = time.time()
     x, min_val, info = fmin_l_bfgs_b(evaluator.loss, x.flatten(), fprime=evaluator.grads, maxfun=20)
-    print('Current loss value:', min_val)
+    print('\t\t\tCurrent loss value:', min_val)
     end_time = time.time()
-    print('Iteration %d completed in %ds' % (i, end_time - start_time))
+    print('\t\t\tIteration %d completed in %ds' % (i, end_time - start_time))
 
   output_img = inverse_image_transform(x, tc_rgb)
-  save_image(output_img, "styled")
+  save_image(output_img, args.img_out)
 
 def total_variation_loss(x):
   '''
@@ -261,7 +266,7 @@ def save_image(image, filename, filetype="PNG"):
   @returns: nothing
   '''
 
-  out_dir = f"./image_out/{filename}.{filetype.lower()}"
+  out_dir = f"{filename}.{filetype.lower()}"
   image.save(out_dir)
   print(f"Image saved to: {out_dir}")
 
@@ -362,7 +367,6 @@ def validate_args(args):
   else:
     print("Path to style image not provided. Exiting.")
     sys.exit(1)
-
 
 if __name__ == "__main__":
   main()
