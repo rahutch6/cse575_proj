@@ -40,7 +40,7 @@ model = Sequential([
   layers.Dense(num_classes) 
 ]) 
 
-epochs=7
+epochs=8
 
 print(f'\033[92mtraining the full dataset...\033[0m')
 model.compile(optimizer='adam', 
@@ -52,11 +52,11 @@ history = model.fit(
     train_ds, 
     validation_data=val_ds, 
     epochs=epochs,
-    verbose=2
+    verbose=0
 ) 
 print(f'\033[93mtesting the full dataset...\033[0m')
 
-full_result = model.evaluate(test_ds, verbose=2)
+full_result = model.evaluate(test_ds, verbose=0)
 
 #=============================================================================
 print(f'\033[92mtraining the sparse dataset...\033[0m')
@@ -82,10 +82,10 @@ history = model.fit(
     sparse_tr_ds, 
     validation_data=sparse_val_ds, 
     epochs=epochs,
-    verbose=2
+    verbose=0
 ) 
 print(f'\033[93mtesting the sparse dataset...\033[0m')
-sparse_result = model.evaluate(test_ds, verbose=2)
+sparse_result = model.evaluate(test_ds, verbose=0)
 #=============================================================================
 print(f'\033[92mtraining the generated dataset...\033[0m')
 keras.backend.clear_session()
@@ -109,11 +109,11 @@ history = model.fit(
     gen_tr_ds, 
     validation_data=gen_val_ds, 
     epochs=epochs,
-    verbose=2
+    verbose=0
 ) 
 
 print(f'\033[93mtesting the generated dataset...\033[0m')
-generated_result = model.evaluate(test_ds, verbose=2)
+generated_result = model.evaluate(test_ds, verbose=0)
 
 #=============================================================================
 print(f'\033[95mfull data set test accuracy = {full_result[1]}\033[0m')
