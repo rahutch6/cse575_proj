@@ -8,23 +8,38 @@ img_dir = pathlib.Path(img_dir)
 sparse_dir = '.\\image_recog_src\\train_validate_sparse\\'
 gen_dir = '.\\image_recog_src\\train_validate_generated\\'
 roses = list(img_dir.glob('roses/*'))
+print(f'og roses: {len(roses)}')
+sunflowers = list(img_dir.glob('sunflowers/*'))
+print(f'og sunflowers: {len(sunflowers)}')
+tulips = list(img_dir.glob('tulips/*'))
+print(f'og tulips: {len(tulips)}')
+
+print(f"\tnew roses: {len(list(pathlib.Path(sparse_dir).glob('roses/*')))}")
+print(f"\tnew sunflowers: {len(list(pathlib.Path(sparse_dir).glob('sunflowers/*')))}")
+print(f"\tnew tulips: {len(list(pathlib.Path(sparse_dir).glob('tulips/*')))}")
+
+print("DO NOT RUN THIS AGAIN UNLESS TRAIN_VALIDATE_SPARSE DIRECTORY AND TRAIN_VALIDATE_GENERATED DIRECTORY ARE EMPTY")
+exit()
 for i in range(len(roses)):
     inPath = str(img_dir) +'\\roses\\'+ str(roses[i]).split('\\')[-1]
     outPath = 'roses\\'+str(roses[i]).split('\\')[-1]
-    if i%2==0:
+    if i%3!=0:
         shutil.copyfile(inPath, sparse_dir + outPath)
         shutil.copyfile(inPath, gen_dir + outPath)
-sunflowers = list(img_dir.glob('sunflowers/*'))
 for i in range(len(sunflowers)):
     inPath = str(img_dir) +'\\sunflowers\\'+ str(sunflowers[i]).split('\\')[-1]
     outPath = 'sunflowers\\'+str(sunflowers[i]).split('\\')[-1]
-    if i%2==0:
+    if i%3!=0:
         shutil.copyfile(inPath, sparse_dir + outPath)
         shutil.copyfile(inPath, gen_dir + outPath)
-tulips = list(img_dir.glob('tulips/*'))
+
 for i in range(len(tulips)):
     inPath = str(img_dir) +'\\tulips\\'+ str(tulips[i]).split('\\')[-1]
     outPath = 'tulips\\'+str(tulips[i]).split('\\')[-1]
-    if i%2==0:
+    if i%3!=0:
         shutil.copyfile(inPath, sparse_dir + outPath)
         shutil.copyfile(inPath, gen_dir + outPath)
+
+print(f"\tnew roses: {len(list(pathlib.Path(sparse_dir).glob('roses/*')))}")
+print(f"\tnew sunflowers: {len(list(pathlib.Path(sparse_dir).glob('sunflowers/*')))}")
+print(f"\tnew tulips: {len(list(pathlib.Path(sparse_dir).glob('tulips/*')))}")
