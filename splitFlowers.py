@@ -20,9 +20,10 @@ for i in range(len(roses)):
         shutil.copyfile(inPath, outPath)
     else:
         ran=random.random()
-        if ran<(100/len(roses)):
+        if ran<(400/len(roses)):
             outPath = trval_dir+outPath
             shutil.copyfile(inPath, outPath)
+print(f'og roses: {len(roses)}\n\ttest roses: {len(list(pathlib.Path(tst_dir).glob("roses/*")))}\n\ttr/val roses: {len(list(pathlib.Path(trval_dir).glob("roses/*")))}')
 sunflowers = list(img_dir.glob('sunflowers/*')) 
 for i in range(len(sunflowers)):
     inPath = str(img_dir) +'\\sunflowers\\'+ str(sunflowers[i]).split('\\')[-1]
@@ -33,9 +34,10 @@ for i in range(len(sunflowers)):
         shutil.copyfile(inPath, outPath)
     else:
         ran=random.random()
-        if ran<(100/len(sunflowers)):
+        if ran<(400/len(sunflowers)):
             outPath = trval_dir+outPath
             shutil.copyfile(inPath, outPath)
+print(f'og sunflowers: {len(sunflowers)}\n\ttest sunflowers: {len(list(pathlib.Path(tst_dir).glob("sunflowers/*")))}\n\ttr/val sunflowers: {len(list(pathlib.Path(trval_dir).glob("sunflowers/*")))}')
 tulips = list(img_dir.glob('tulips/*')) 
 for i in range(len(tulips)):
     inPath = str(img_dir) +'\\tulips\\'+ str(tulips[i]).split('\\')[-1]
@@ -46,6 +48,7 @@ for i in range(len(tulips)):
         shutil.copyfile(inPath, outPath)
     else:
         ran=random.random()
-        if ran<(100/len(tulips)):
+        if ran<(400/len(tulips)):
             outPath = trval_dir+outPath
             shutil.copyfile(inPath, outPath)
+print(f'og tulips: {len(tulips)}\n\ttest tulips: {len(list(pathlib.Path(tst_dir).glob("tulips/*")))}\n\ttr/val tulips: {len(list(pathlib.Path(trval_dir).glob("tulips/*")))}')
