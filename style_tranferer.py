@@ -9,6 +9,9 @@
 import time
 import numpy as np
 import pprint
+import argparse
+import os
+import sys
 
 # Image processing
 from PIL import Image                         # Image processing
@@ -28,14 +31,24 @@ channels  = 3
 
 def main():
 
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--content_image' , '-ci' , type=str                  , help="Path to content image"  )
+  parser.add_argument('--style_image'   , '-si' , type=str                  , help="Path to style image"    )
+  parser.add_argument('--iterations'    , '-itr', type=int,   default=10    , help="Num iterations to train")
+  parser.add_argument('--content_weight', '-cw' , type=float, default=0.025 , help="Num iterations to train")
+  parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="Num iterations to train")
+  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="Num iterations to train")
+  args = parser.parse_args()
+  validate_args(args)
+
   # Get the images
-  test_content_image  = get_image("image_src/content/guy_at_lake.jpg", width, height)
-  test_style_image    = get_image("image_src/style/prettyFlowers.jpg", width, height)
-  # save_image(test_style_image, "tst_style")
+  raw_content_image   = get_image(args.content_image, width, height)
+  raw_style_image     = get_image(args.style_image, width, height)
+  # save_image(raw_style_image, "tst_style")
 
   # Convert the images to 4D arrays for the CNN to use
-  tc_arr, tc_rgb      = img_2_arr(test_content_image)
-  ts_arr, ts_rgb      = img_2_arr(test_style_image)
+  tc_arr, tc_rgb      = img_2_arr(raw_content_image)
+  ts_arr, ts_rgb      = img_2_arr(raw_style_image)
 
   # Normalize the RGB values of each image
   tc_arr              = normalize_rgb(tc_arr, tc_rgb)
@@ -85,9 +98,9 @@ def main():
   vgg16(in_tensor) # ; print("block2_conv2 activation shape:", layer_outputs['block5_conv3'].shape)
 
   # WEIGHTS # TODO: TUNE ME
-  c_weight = 0.025
-  s_weight = 5.0
-  total_variation_weight = 1.0
+  c_weight                = args.content_weight
+  s_weight                = args.style_weight
+  total_variation_weight  = args.var_weight
 
   # CONTENT LOSS #
   layer_features    = layer_outputs['block2_conv2']
@@ -97,12 +110,11 @@ def main():
 
   # STYLE LOSS #
   for layer in layers:
-    layer_features = layer_outputs[layer]
-    style_features = layer_features[1]
-    combo_features = layer_features[2]
-    s_loss = style_loss(style_features, combo_features)
-    loss += (s_weight / len(layers)) * s_loss
-    # print(loss)
+    layer_features  = layer_outputs[layer]
+    style_features  = layer_features[1]
+    combo_features  = layer_features[2]
+    s_loss          = style_loss(style_features, combo_features)
+    loss           += (s_weight / len(layers)) * s_loss
   
   # VARIATION LOSS #
   loss += total_variation_weight * total_variation_loss(combo_img)
@@ -174,13 +186,11 @@ def main():
   # EVALUATION #
   evaluator = Evaluator()
   x = np.random.uniform(0, 255, (1, 3, height, width)) - 128
-  iterations = 10
 
-  for i in range(iterations):
+  for i in range(args.iterations):
     print('Start of iteration', i)
     start_time = time.time()
-    x, min_val, info = fmin_l_bfgs_b(evaluator.loss, x.flatten(),
-                                     fprime=evaluator.grads, maxfun=20)
+    x, min_val, info = fmin_l_bfgs_b(evaluator.loss, x.flatten(), fprime=evaluator.grads, maxfun=20)
     print('Current loss value:', min_val)
     end_time = time.time()
     print('Iteration %d completed in %ds' % (i, end_time - start_time))
@@ -189,6 +199,10 @@ def main():
   save_image(output_img, "styled")
 
 def total_variation_loss(x):
+  '''
+  Variation loss is a regularization term that smooths the output.
+  Less noisy output.
+  '''
   a = (x[:, :, :height-1, :width-1] - x[:, :, 1:, :width-1])  ** 2  # Differences along vertical direction
   b = (x[:, :, :height-1, :width-1] - x[:, :, :height-1, 1:]) ** 2  # Differences along horizontal direction
   return torch.sum((a+b) ** 1.25)
@@ -331,6 +345,24 @@ def inverse_image_transform(image, avg_rgbs):
     image = np.clip(image, 0, 255).astype('uint8')
     
     return Image.fromarray(image)
+
+def validate_args(args):
+  if args.content_image:
+    if not os.path.exists(args.content_image):
+      print("Path to content image is invalid. Exiting.")
+      sys.exit(1)
+  else:
+    print("Path to content image not provided. Exiting.")
+    sys.exit(1)
+
+  if args.style_image:
+    if not os.path.exists(args.style_image):
+      print("Path to style image is invalid. Exiting.")
+      sys.exit(1)
+  else:
+    print("Path to style image not provided. Exiting.")
+    sys.exit(1)
+
 
 if __name__ == "__main__":
   main()
