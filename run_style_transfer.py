@@ -45,7 +45,7 @@ def main():
     s_name = os.path.splitext(os.path.basename(style_paths[idx]))[0]
     
     out_name = f"image_out/{c_name}_+_{s_name}"
-    sp_args = ['python3', './style_transferer.py', '-ci', content_path, '-si', style_paths[idx], '-io', out_name, '-itr', str(2)]
+    sp_args = ['python', './style_transferer.py', '-ci', content_path, '-si', style_paths[idx], '-io', out_name, '-itr', str(2)]
     # sp.run(sp_args, stdout=sp.PIPE, universal_newlines=True, shell=False)
     command = ' '.join(sp_args)  # Ensure sp_args is a space-separated string
     os.system(command)
