@@ -4,14 +4,14 @@ Usage:
   run_style_transferer.py --content_src = <path to content directory> --style_src = <path to style directory>
 
 IMPORTANT: must be exactly as many images in content_src as image_src
+
+For Cuda: conda install pytorch torchvision torchaudio cudatoolkit=11.8 -c pytorch
 '''
 
 import argparse
 import subprocess as sp
 import sys
 import os
-
-from click import style
 
 def main():
   ''' Run style transferer '''
@@ -45,7 +45,7 @@ def main():
     s_name = os.path.splitext(os.path.basename(style_paths[idx]))[0]
     
     out_name = f"image_out/{c_name}_+_{s_name}"
-    sp_args = ['python', './style_transferer.py', '-ci', content_path, '-si', style_paths[idx], '-io', out_name, '-itr', str(2)]
+    sp_args = ['python', './style_transferer_gpu.py', '-ci', content_path, '-si', style_paths[idx], '-io', out_name, '-itr', str(2)]
     # sp.run(sp_args, stdout=sp.PIPE, universal_newlines=True, shell=False)
     command = ' '.join(sp_args)  # Ensure sp_args is a space-separated string
     os.system(command)

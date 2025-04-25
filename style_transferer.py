@@ -15,7 +15,6 @@ import sys
 
 # Image processing
 from PIL import Image                         # Image processing
-import imageio
 
 # Torch
 import torch
@@ -40,8 +39,12 @@ def main():
   parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="Num iterations to train")
   parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="Num iterations to train")
   args = parser.parse_args()
+
   validate_args(args)
+  device  = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
   print("\n----- Running Style Transfer -----")
+
   # Get the images
   raw_content_image   = get_image(args.content_image, width, height)
   raw_style_image     = get_image(args.style_image, width, height)
@@ -61,12 +64,17 @@ def main():
   s_img               = torch.from_numpy(ts_arr.copy())   # Style Image Tensor
   combo_img           = torch.empty_like(c_img)           # Combined Image Tensor
   combo_img.requires_grad_()
+
+  # GPU Compatibility
+  c_img     = c_img.to(device)
+  s_img     = s_img.to(device)
+  combo_img = combo_img.to(device)
   loss                = torch.zeros(1)                    # Loss Tensor
   print("\tCreated tensors")
   # Input tensor:
   # - Matrix of content image, style image, and combo image along the batch axis (0).
   # - Represents a batch of three images that will be passed thru the VGG16 CNN
-  in_tensor = torch.cat([c_img, s_img, combo_img], dim=0)
+  in_tensor = torch.cat([c_img, s_img, combo_img], dim=0).to(device)
 
   # These are the layers of the CNN we need output from
   layers = {
@@ -79,7 +87,7 @@ def main():
   layer_outputs = {} # Dict to store intermediate level outputs
 
   # Instantiate the VGG CNN Model
-  vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+  vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1).to(device)
   vgg16.eval()
 
   # Define a hook to get the output of the layers
