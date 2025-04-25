@@ -40,7 +40,7 @@ model = Sequential([
   layers.Dense(num_classes) 
 ]) 
 
-epochs=8
+epochs=15
 
 print(f'\033[92mtraining the full dataset...\033[0m')
 model.compile(optimizer='adam', 
