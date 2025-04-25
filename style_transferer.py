@@ -36,9 +36,9 @@ def main():
   parser.add_argument('--style_image'   , '-si' , type=str                  , help="Path to style image"    )
   parser.add_argument('--img_out'       , '-io' , type=str,   default="image_out/out", help="Path to output image")
   parser.add_argument('--iterations'    , '-itr', type=int,   default=10    , help="Num iterations to train")
-  parser.add_argument('--content_weight', '-cw' , type=float, default=0.025 , help="Num iterations to train")
-  parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="Num iterations to train")
-  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="Num iterations to train")
+  parser.add_argument('--content_weight', '-cw' , type=float, default=0.025 , help="content weight")
+  parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="style weight")
+  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="idk")
   args = parser.parse_args()
   validate_args(args)
   print("\n----- Running Style Transfer -----")
@@ -59,6 +59,8 @@ def main():
   # Create Torch Tensors
   c_img               = torch.from_numpy(tc_arr.copy())   # Content Image Tensor
   s_img               = torch.from_numpy(ts_arr.copy())   # Style Image Tensor
+  print(c_img.shape)
+  print(s_img.shape)
   combo_img           = torch.empty_like(c_img)           # Combined Image Tensor
   combo_img.requires_grad_()
   loss                = torch.zeros(1)                    # Loss Tensor
@@ -98,6 +100,7 @@ def main():
   print("\tRegistered Model Hooks")
 
   # Send in the input tensor
+  print(in_tensor.shape)
   vgg16(in_tensor) # ; print("block2_conv2 activation shape:", layer_outputs['block5_conv3'].shape)
   print("\tTensor fed to model")
 
@@ -254,6 +257,8 @@ def get_image(image_path, width=512, height=512):
   '''
 
   c_image = Image.open(image_path)
+  if c_image.format != 'JPEG':
+    c_image = c_image.convert("RGB")
   c_image = c_image.resize((width, height))
   return c_image
 
@@ -283,6 +288,7 @@ def img_2_arr(image):
   # Formatting
   formatted_array = np.asarray(image, dtype='float32')      # (height, width, channels)
   formatted_array = formatted_array.transpose(2, 0, 1)
+  print("ARRAY SHAPE", formatted_array.shape)
   formatted_array = np.expand_dims(formatted_array, axis=0) # (batch size, height, width, channels)
 
   # Avg RBG
