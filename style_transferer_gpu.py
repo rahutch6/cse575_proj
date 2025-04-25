@@ -288,6 +288,8 @@ def get_image(image_path, width=512, height=512):
   '''
 
   c_image = Image.open(image_path)
+  if c_image.format != 'JPEG':
+    c_image = c_image.convert("RGB")
   c_image = c_image.resize((width, height))
   return c_image
 
