@@ -21,8 +21,6 @@ from PIL import Image                         # Image processing
 # Torch
 import torch
 import torchvision.models as models
-
-# Scipy
 from scipy.optimize import fmin_l_bfgs_b      # Minimization function
 
 # Useful Constants
@@ -37,13 +35,14 @@ def main():
   parser.add_argument('--style_image'   , '-si' , type=str                  , help="Path to style image"    )
   parser.add_argument('--img_out'       , '-io' , type=str,   default="image_out/out", help="Path to output image")
   parser.add_argument('--iterations'    , '-itr', type=int,   default=10    , help="Num iterations to train")
-  parser.add_argument('--content_weight', '-cw' , type=float, default=0.025 , help="content weight")
-  parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="style weight")
-  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="idk")
+  parser.add_argument('--content_weight', '-cw' , type=float, default=0.025 , help="Num iterations to train")
+  parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="Num iterations to train")
+  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="Num iterations to train")
   args = parser.parse_args()
 
   validate_args(args)
   device  = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  print(f"DEVICE: {device}")
 
   print("\n----- Running Style Transfer -----")
 
@@ -62,15 +61,15 @@ def main():
   ts_arr              = normalize_rgb(ts_arr, ts_rgb)
 
   # Create Torch Tensors
-  c_img               = torch.from_numpy(tc_arr.copy())   # Content Image Tensor
-  s_img               = torch.from_numpy(ts_arr.copy())   # Style Image Tensor
-  combo_img           = torch.empty_like(c_img, requires_grad=True)           # Combined Image Tensor
-  loss                = torch.zeros(1)                    # Loss Tensor
+  c_img               = torch.from_numpy(tc_arr.copy()).to(device)                  # Content Image Tensor
+  s_img               = torch.from_numpy(ts_arr.copy()).to(device)                  # Style Image Tensor
+  combo_img           = torch.empty_like(c_img, device=device, requires_grad=True)  # Combined Image Tensor
+  loss                = torch.zeros(1, device=device)                                              # Loss Tensor
   print("\tCreated tensors")
   # Input tensor:
   # - Matrix of content image, style image, and combo image along the batch axis (0).
   # - Represents a batch of three images that will be passed thru the VGG16 CNN
-  in_tensor = torch.cat([c_img, s_img, combo_img], dim=0)
+  in_tensor = torch.cat([c_img, s_img, combo_img], dim=0).to(device)
 
   # These are the layers of the CNN we need output from
   layers = {
@@ -83,7 +82,7 @@ def main():
   layer_outputs = {} # Dict to store intermediate level outputs
 
   # Instantiate the VGG CNN Model
-  vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+  vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1).to(device)
   vgg16.eval()
 
   # Define a hook to get the output of the layers
@@ -141,7 +140,7 @@ def main():
     '''
 
     # Reshape x into a tensor of shape (1, 3, height, width)
-    x_tensor = torch.from_numpy(x.reshape((1, 3, height, width))).float()
+    x_tensor = torch.from_numpy(x.reshape((1, 3, height, width))).to(combo_img.device).float()
 
     with torch.no_grad():
         combo_img.copy_(x_tensor)
@@ -154,7 +153,7 @@ def main():
     new_in_tensor = torch.cat([c_img, s_img, combo_img], dim=0)
     vgg16(new_in_tensor)
 
-    current_loss = torch.zeros(1)
+    current_loss = torch.zeros(1).to(combo_img.device)
 
     # -- Content Loss from block2_conv2 -- #
     lf = layer_outputs['block2_conv2']
@@ -172,7 +171,12 @@ def main():
     current_loss.backward()
     grad_vals = combo_img.grad.cpu().numpy().flatten().astype('float64')
     return current_loss.item(), grad_vals
-  
+  optimizer = torch.optim.LBFGS(
+    [combo_img],
+    max_iter=20,     
+    tolerance_grad=1e-5,
+    tolerance_change=1e-9,
+  )
   # TODO: Document
   class Evaluator(object):
 
@@ -203,9 +207,35 @@ def main():
     print('\t\t\tCurrent loss value:', min_val)
     end_time = time.time()
     print('\t\t\tIteration %d completed in %ds' % (i, end_time - start_time))
+  # def closure():
+  #   optimizer.zero_grad()
+  #   layer_outputs.clear()
+  #   # forward
+  #   vgg16(torch.cat([c_img, s_img, combo_img], dim=0))
+  #   # compute losses 
+  #   c_loss = args.content_weight * content_loss(
+  #       layer_outputs['block2_conv2'][0],
+  #       layer_outputs['block2_conv2'][2]
+  #   )
+  #   s_loss = sum(
+  #       style_loss(layer_outputs[layer][1], layer_outputs[layer][2])
+  #       for layer in layers
+  #   ) * (args.style_weight / len(layers))
+  #   tv_loss = args.var_weight * total_variation_loss(combo_img)
+  #   loss = c_loss + s_loss + tv_loss
+  #   loss.backward()
+  #   return loss
 
+  # for i in range(args.iterations):
+  #   start = time.time()
+  #   optimizer.step(closure)
+  #   end = time.time()
+    # print(f"\tIteration {i} completed in {end-start:.1f}s")
+
+  # output_img = inverse_image_transform(combo_img.detach().cpu().numpy(), tc_rgb)
   output_img = inverse_image_transform(x, tc_rgb)
   save_image(output_img, args.img_out)
+
 
 def total_variation_loss(x):
   '''
@@ -258,8 +288,6 @@ def get_image(image_path, width=512, height=512):
   '''
 
   c_image = Image.open(image_path)
-  if c_image.format != 'JPEG':
-    c_image = c_image.convert("RGB")
   c_image = c_image.resize((width, height))
   return c_image
 
