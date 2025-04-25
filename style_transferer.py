@@ -11,6 +11,8 @@ import numpy as np
 import pprint
 import argparse
 import os
+os.environ["MKL_THREADING_LAYER"]   = "GNU"
+os.environ["KMP_DUPLICATE_LIB_OK"]  = "TRUE"
 import sys
 
 # Image processing
@@ -62,21 +64,13 @@ def main():
   # Create Torch Tensors
   c_img               = torch.from_numpy(tc_arr.copy())   # Content Image Tensor
   s_img               = torch.from_numpy(ts_arr.copy())   # Style Image Tensor
-  print(c_img.shape)
-  print(s_img.shape)
-  combo_img           = torch.empty_like(c_img)           # Combined Image Tensor
-  combo_img.requires_grad_()
-
-  # GPU Compatibility
-  c_img     = c_img.to(device)
-  s_img     = s_img.to(device)
-  combo_img = combo_img.to(device)
+  combo_img           = torch.empty_like(c_img, requires_grad=True)           # Combined Image Tensor
   loss                = torch.zeros(1)                    # Loss Tensor
   print("\tCreated tensors")
   # Input tensor:
   # - Matrix of content image, style image, and combo image along the batch axis (0).
   # - Represents a batch of three images that will be passed thru the VGG16 CNN
-  in_tensor = torch.cat([c_img, s_img, combo_img], dim=0).to(device)
+  in_tensor = torch.cat([c_img, s_img, combo_img], dim=0)
 
   # These are the layers of the CNN we need output from
   layers = {
@@ -89,7 +83,7 @@ def main():
   layer_outputs = {} # Dict to store intermediate level outputs
 
   # Instantiate the VGG CNN Model
-  vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1).to(device)
+  vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
   vgg16.eval()
 
   # Define a hook to get the output of the layers
@@ -108,7 +102,6 @@ def main():
   print("\tRegistered Model Hooks")
 
   # Send in the input tensor
-  print(in_tensor.shape)
   vgg16(in_tensor) # ; print("block2_conv2 activation shape:", layer_outputs['block5_conv3'].shape)
   print("\tTensor fed to model")
 
@@ -148,7 +141,7 @@ def main():
     '''
 
     # Reshape x into a tensor of shape (1, 3, height, width)
-    x_tensor = torch.from_numpy(x.reshape((1, 3, height, width))).to(combo_img.device).float()
+    x_tensor = torch.from_numpy(x.reshape((1, 3, height, width))).float()
 
     with torch.no_grad():
         combo_img.copy_(x_tensor)
@@ -161,7 +154,7 @@ def main():
     new_in_tensor = torch.cat([c_img, s_img, combo_img], dim=0)
     vgg16(new_in_tensor)
 
-    current_loss = torch.zeros(1).to(combo_img.device)
+    current_loss = torch.zeros(1)
 
     # -- Content Loss from block2_conv2 -- #
     lf = layer_outputs['block2_conv2']
@@ -296,7 +289,6 @@ def img_2_arr(image):
   # Formatting
   formatted_array = np.asarray(image, dtype='float32')      # (height, width, channels)
   formatted_array = formatted_array.transpose(2, 0, 1)
-  print("ARRAY SHAPE", formatted_array.shape)
   formatted_array = np.expand_dims(formatted_array, axis=0) # (batch size, height, width, channels)
 
   # Avg RBG
