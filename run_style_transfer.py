@@ -23,6 +23,8 @@ def main():
   parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="style weight")
   parser.add_argument('--iterations'    , '-itr', type=int,   default=10    , help="Num iterations to train")
   parser.add_argument('--gpu_enable'    , '-ge', action="store_true"        , help="Add flag to use GPU")
+  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="Num iterations to train")
+
   args = parser.parse_args()
 
   # Verify inputs are good
@@ -52,7 +54,7 @@ def main():
     out_name = f"image_out/{c_name}_+_{s_name}"
     sp_args = ['python', script_ver, '-ci', content_path, '-si', style_paths[idx], 
                 '-io', out_name, '-itr', str(2), '-cw', str(args.content_weight), '-sw', str(args.style_weight), 
-                '-itr', str(args.iterations)]
+                '-itr', str(args.iterations), '-vw', str(args.var_weight)]
     # sp.run(sp_args, stdout=sp.PIPE, universal_newlines=True, shell=False)
     command = ' '.join(sp_args)  # Ensure sp_args is a space-separated string
     os.system(command)
