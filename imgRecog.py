@@ -16,6 +16,7 @@ def main():
   parser.add_argument('--content_weight', '-cw' , type=float, default=0.025 , help="content weight")
   parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="style weight")
   parser.add_argument('--iterations'    , '-itr', type=int,   default=10    , help="Num iterations to train")
+  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="idk")
   parser.add_argument('--gpu_enable'    , '-ge', action="store_true"        , help="Add flag to use GPU")
   args = parser.parse_args()
 
@@ -26,16 +27,22 @@ def main():
   if args.pullStyleImages:
     getStyle()
   if args.generateImages:
-    sp_args = ['python', '.\\run_style_transfer.py', '-cs', args.content_src, '-ss', args.style_src, '-cw', args.content_weight,
-               '-sw', args.style_weight, '-itr', args.iteration]
-    if args.gpu_engable: sp_args += '-ge'
-    for i in ['roses', 'sunflowers', 'tulips']:
-       new_args=sp_args.copy() + '-io' + f'.\\image_recog_src\\train_validate_generated\\{i}'
-       print(new_args)
+    sp_args = ['python', '.\\run_style_transfer.py', '-cw', str(args.content_weight),
+               '-sw', str(args.style_weight), '-itr', str(args.iterations), '-vw', str(args.var_weight)]
+    if args.gpu_enable: sp_args += ['-ge']
+    num=0
+    for i in ['roses']:
+      # new_args=sp_args.copy() + ['-io', f'.\\image_recog_src\\train_validate_generated\\{i}','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
+      new_args=sp_args.copy() + ['-io', f'image_out\\out','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
+      num+=1
+      command = ' '.join(new_args)  # Ensure sp_args is a space-separated string
+      os.system(command)
+    # for i in ['roses', 'sunflowers', 'tulips']:
+    #   # new_args=sp_args.copy() + ['-io', f'.\\image_recog_src\\train_validate_generated\\{i}','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
+    #   new_args=sp_args.copy() + ['-io', f'image_out\\out','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
+    #   command = ' '.join(new_args)  # Ensure sp_args is a space-separated string
+    #   os.system(command)
 
-    # sp.run(sp_args, stdout=sp.PIPE, universal_newlines=True, shell=False)
-    command = ' '.join(sp_args)  # Ensure sp_args is a space-separated string
-    os.system(command)
 
 def splitFlows():
   img_dir = '.\\image_recog_src\\flower_photos' 

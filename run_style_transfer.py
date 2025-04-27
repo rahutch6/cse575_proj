@@ -24,6 +24,7 @@ def main():
   parser.add_argument('--iterations'    , '-itr', type=int,   default=10    , help="Num iterations to train")
   parser.add_argument('--gpu_enable'    , '-ge', action="store_true"        , help="Add flag to use GPU")
   parser.add_argument('--img_out'       , '-io' , type=str,   default="image_out/out", help="Path to output image")
+  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="idk")
   args = parser.parse_args()
 
   # Verify inputs are good
@@ -53,13 +54,12 @@ def main():
     out_name = args.img_out
     sp_args = ['python', script_ver, '-ci', content_path, '-si', style_paths[idx], 
                 '-io', out_name, '-itr', str(2), '-cw', str(args.content_weight), '-sw', str(args.style_weight), 
-                '-itr', str(args.iterations)]
+                '-itr', str(args.iterations), '-vw', str(args.var_weight)]
     # sp.run(sp_args, stdout=sp.PIPE, universal_newlines=True, shell=False)
     command = ' '.join(sp_args)  # Ensure sp_args is a space-separated string
     os.system(command)
   print(f"Style Paths: {style_paths}")
   print(f"Content Paths: {content_paths}")
-
 
 
 if __name__ == "__main__":
