@@ -23,6 +23,7 @@ def main():
   parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="style weight")
   parser.add_argument('--iterations'    , '-itr', type=int,   default=10    , help="Num iterations to train")
   parser.add_argument('--gpu_enable'    , '-ge', action="store_true"        , help="Add flag to use GPU")
+  parser.add_argument('--img_out'       , '-io' , type=str,   default="image_out/out", help="Path to output image")
   args = parser.parse_args()
 
   # Verify inputs are good
@@ -49,7 +50,7 @@ def main():
     c_name = os.path.splitext(os.path.basename(content_path))[0]
     s_name = os.path.splitext(os.path.basename(style_paths[idx]))[0]
     
-    out_name = f"image_out/{c_name}_+_{s_name}"
+    out_name = args.img_out
     sp_args = ['python', script_ver, '-ci', content_path, '-si', style_paths[idx], 
                 '-io', out_name, '-itr', str(2), '-cw', str(args.content_weight), '-sw', str(args.style_weight), 
                 '-itr', str(args.iterations)]
