@@ -4,7 +4,7 @@
 # @author: alcoope8@asu.edu #
 # @author: rahutch6@asu.edu #
 #############################
-
+ # TODO: Delete me: -cw 0.025 -sw 5 -vw 0.2 -itr 9
 # Imports #
 import time
 import numpy as np
@@ -24,8 +24,10 @@ import torchvision.models as models
 from scipy.optimize import fmin_l_bfgs_b      # Minimization function
 
 # Useful Constants
-width     = 512
-height    = 512
+# width     = 350
+# height    = 350
+width     = 1200
+height    = 150
 channels  = 3
 
 def main():
@@ -38,34 +40,42 @@ def main():
   parser.add_argument('--content_weight', '-cw' , type=float, default=0.025 , help="Num iterations to train")
   parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="Num iterations to train")
   parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="Num iterations to train")
+  parser.add_argument('--seed'    , '-s' , type=int, default=1   , help="Num iterations to train")
   args = parser.parse_args()
 
-  validate_args(args)
+  # Initialization #
+  validate_args(args) # Check directories in args
+  
+  # Set the device to GPU if available
   device  = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   print(f"DEVICE: {device}")
 
+  # Begin Style Transfer #
   print("\n----- Running Style Transfer -----")
 
   # Get the images
   raw_content_image   = get_image(args.content_image, width, height)
   raw_style_image     = get_image(args.style_image, width, height)
+
   print("\tAcquired content and style images")
-  # save_image(raw_style_image, "tst_style")
 
   # Convert the images to 4D arrays for the CNN to use
   tc_arr, tc_rgb      = img_2_arr(raw_content_image)
   ts_arr, ts_rgb      = img_2_arr(raw_style_image)
 
   # Normalize the RGB values of each image
-  tc_arr              = normalize_rgb(tc_arr, tc_rgb)
-  ts_arr              = normalize_rgb(ts_arr, ts_rgb)
+  norm_rgb = np.array([103.939, 116.779, 123.68])
+  tc_arr              = normalize_rgb(tc_arr, norm_rgb)
+  ts_arr              = normalize_rgb(ts_arr, norm_rgb)
 
   # Create Torch Tensors
   c_img               = torch.from_numpy(tc_arr.copy()).to(device)                  # Content Image Tensor
   s_img               = torch.from_numpy(ts_arr.copy()).to(device)                  # Style Image Tensor
   combo_img           = torch.empty_like(c_img, device=device, requires_grad=True)  # Combined Image Tensor
-  loss                = torch.zeros(1, device=device)                                              # Loss Tensor
+  loss                = torch.zeros(1, device=device)                               # Loss Tensor
+
   print("\tCreated tensors")
+
   # Input tensor:
   # - Matrix of content image, style image, and combo image along the batch axis (0).
   # - Represents a batch of three images that will be passed thru the VGG16 CNN
@@ -73,16 +83,22 @@ def main():
 
   # These are the layers of the CNN we need output from
   layers = {
+    'block'       : 0,
+    't':1,
     'block1_conv2': 3,
-    'block2_conv2': 8,
-    'block3_conv3': 15,
-    'block4_conv3': 22,
-    'block5_conv3': 29
+    'block2_conv2': 6,
+    'b7'          : 10,
+    'b6'          : 12,
+    'b5'          : 14,
+    'b4'          : 17,
+    'b2'          : 22,
+    'block5_conv3': 28
   }
+  
   layer_outputs = {} # Dict to store intermediate level outputs
 
   # Instantiate the VGG CNN Model
-  vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1).to(device)
+  vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_FEATURES).to(device)
   vgg16.eval()
 
   # Define a hook to get the output of the layers
@@ -98,13 +114,15 @@ def main():
   # Register the hook for each relevant layer
   for layer_name, idx in layers.items():
     vgg16.features[idx].register_forward_hook(get_activation(layer_name))
+
   print("\tRegistered Model Hooks")
 
   # Send in the input tensor
   vgg16(in_tensor) # ; print("block2_conv2 activation shape:", layer_outputs['block5_conv3'].shape)
+  
   print("\tTensor fed to model")
 
-  # WEIGHTS # TODO: TUNE ME
+  # WEIGHTS #
   c_weight                = args.content_weight
   s_weight                = args.style_weight
   total_variation_weight  = args.var_weight
@@ -171,12 +189,12 @@ def main():
     current_loss.backward()
     grad_vals = combo_img.grad.cpu().numpy().flatten().astype('float64')
     return current_loss.item(), grad_vals
-  optimizer = torch.optim.LBFGS(
-    [combo_img],
-    max_iter=20,     
-    tolerance_grad=1e-5,
-    tolerance_change=1e-9,
-  )
+  # optimizer = torch.optim.LBFGS(
+  #   [combo_img],
+  #   max_iter=20,     
+  #   tolerance_grad=1e-5,
+  #   tolerance_change=1e-9,
+  # )
   # TODO: Document
   class Evaluator(object):
 
@@ -207,6 +225,9 @@ def main():
     print('\t\t\tCurrent loss value:', min_val)
     end_time = time.time()
     print('\t\t\tIteration %d completed in %ds' % (i, end_time - start_time))
+    # if (i % 2 == 0):
+    #   output_img = inverse_image_transform(x, norm_rgb)
+    #   save_image(output_img, str(i))
   # def closure():
   #   optimizer.zero_grad()
   #   layer_outputs.clear()
@@ -233,7 +254,8 @@ def main():
     # print(f"\tIteration {i} completed in {end-start:.1f}s")
 
   # output_img = inverse_image_transform(combo_img.detach().cpu().numpy(), tc_rgb)
-  output_img = inverse_image_transform(x, tc_rgb)
+  # output_img = inverse_image_transform(x, tc_rgb)
+  output_img = inverse_image_transform(x, norm_rgb)
   save_image(output_img, args.img_out)
 
 
@@ -288,6 +310,8 @@ def get_image(image_path, width=512, height=512):
   '''
 
   c_image = Image.open(image_path)
+  if c_image.format != 'JPEG':
+    c_image = c_image.convert("RGB")
   c_image = c_image.resize((width, height))
   return c_image
 

@@ -30,18 +30,12 @@ def main():
     sp_args = ['python', '.\\run_style_transfer.py', '-cw', str(args.content_weight),
                '-sw', str(args.style_weight), '-itr', str(args.iterations), '-vw', str(args.var_weight)]
     if args.gpu_enable: sp_args += ['-ge']
-    num=0
-    for i in ['roses']:
-      # new_args=sp_args.copy() + ['-io', f'.\\image_recog_src\\train_validate_generated\\{i}','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
-      new_args=sp_args.copy() + ['-io', f'image_out\\out','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
-      num+=1
+
+    for i in ['roses', 'sunflowers','tulips']:
+    #   new_args=sp_args.copy() + ['-io', f'.\\image_out','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
+      new_args=sp_args.copy() + ['-io', f'.\\image_recog_src\\train_validate_generated\\{i}','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
       command = ' '.join(new_args)  # Ensure sp_args is a space-separated string
       os.system(command)
-    # for i in ['roses', 'sunflowers', 'tulips']:
-    #   # new_args=sp_args.copy() + ['-io', f'.\\image_recog_src\\train_validate_generated\\{i}','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
-    #   new_args=sp_args.copy() + ['-io', f'image_out\\out','-cs', f'{args.content_src}\\{i}', '-ss', f'{args.style_src}\\{i}']
-    #   command = ' '.join(new_args)  # Ensure sp_args is a space-separated string
-    #   os.system(command)
 
 
 def splitFlows():
