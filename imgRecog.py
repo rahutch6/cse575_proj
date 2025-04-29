@@ -138,14 +138,9 @@ def getStyle():
   tulipStyle = random.sample(tulips,60)
   for i in range(60):
     if i%2==0:
-      if i%4==0:
-        shutil.copyfile(str(roseStyle[i]), str(sty_dir)+'\\sunflowers\\' + str(roseStyle[i]).split('\\')[-1])
-        shutil.copyfile(str(sunflowerStyle[i]), str(sty_dir)+'\\tulips\\' + str(sunflowerStyle[i]).split('\\')[-1])
-        shutil.copyfile(str(tulipStyle[i]), str(sty_dir)+'\\roses\\' + str(tulipStyle[i]).split('\\')[-1])
-      else:
-        shutil.copyfile(str(roseStyle[i]), str(sty_dir)+'\\tulips\\'+ str(roseStyle[i]).split('\\')[-1])
-        shutil.copyfile(str(sunflowerStyle[i]), str(sty_dir)+'\\roses\\'+ str(sunflowerStyle[i]).split('\\')[-1])
-        shutil.copyfile(str(tulipStyle[i]), str(sty_dir)+'\\sunflowers\\'+ str(tulipStyle[i]).split('\\')[-1])
+      shutil.copyfile(str(roseStyle[i]), str(sty_dir)+'\\roses\\' + str(roseStyle[i]).split('\\')[-1])
+      shutil.copyfile(str(sunflowerStyle[i]), str(sty_dir)+'\\sunflowers\\' + str(sunflowerStyle[i]).split('\\')[-1])
+      shutil.copyfile(str(tulipStyle[i]), str(sty_dir)+'\\tulips\\' + str(tulipStyle[i]).split('\\')[-1])
     else:
       shutil.copyfile(str(roseStyle[i]), str(ctnt_dir)+'\\roses\\'+ str(roseStyle[i]).split('\\')[-1])
       shutil.copyfile(str(sunflowerStyle[i]), str(ctnt_dir)+'\\sunflowers\\'+ str(sunflowerStyle[i]).split('\\')[-1])
