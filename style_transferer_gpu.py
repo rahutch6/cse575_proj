@@ -26,8 +26,8 @@ from scipy.optimize import fmin_l_bfgs_b      # Minimization function
 # Useful Constants
 # width     = 350
 # height    = 350
-width     = 525
-height    = 525
+width     = 1000
+height    = 200
 channels  = 3
 
 def main():
