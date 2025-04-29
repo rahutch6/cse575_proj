@@ -1,0 +1,6 @@
+GENERATED WITH THE FOLLOWING PARAMS:
+
+10 iterations
+.08 cw
+5 sw
+.03 vw
