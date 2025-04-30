@@ -25,8 +25,8 @@ from scipy.optimize import fmin_l_bfgs_b      # Minimization function
 # Useful Constants
 # width     = 350
 # height    = 350
-width     = 525
-height    = 350
+width     = 1000
+height    = 200
 channels  = 3
 
 def main():
@@ -221,10 +221,36 @@ def main():
     print('\t\t\tCurrent loss value:', min_val)
     end_time = time.time()
     print('\t\t\tIteration %d completed in %ds' % (i, end_time - start_time))
-    if (i % 2 == 0):
-      output_img = inverse_image_transform(x, norm_rgb)
-      save_image(output_img, str(i))
+    # if (i % 2 == 0):
+    #   output_img = inverse_image_transform(x, norm_rgb)
+    #   save_image(output_img, str(i))
+  # def closure():
+  #   optimizer.zero_grad()
+  #   layer_outputs.clear()
+  #   # forward
+  #   vgg16(torch.cat([c_img, s_img, combo_img], dim=0))
+  #   # compute losses 
+  #   c_loss = args.content_weight * content_loss(
+  #       layer_outputs['block2_conv2'][0],
+  #       layer_outputs['block2_conv2'][2]
+  #   )
+  #   s_loss = sum(
+  #       style_loss(layer_outputs[layer][1], layer_outputs[layer][2])
+  #       for layer in layers
+  #   ) * (args.style_weight / len(layers))
+  #   tv_loss = args.var_weight * total_variation_loss(combo_img)
+  #   loss = c_loss + s_loss + tv_loss
+  #   loss.backward()
+  #   return loss
 
+  # for i in range(args.iterations):
+  #   start = time.time()
+  #   optimizer.step(closure)
+  #   end = time.time()
+    # print(f"\tIteration {i} completed in {end-start:.1f}s")
+
+  # output_img = inverse_image_transform(combo_img.detach().cpu().numpy(), tc_rgb)
+  # output_img = inverse_image_transform(x, tc_rgb)
   output_img = inverse_image_transform(x, norm_rgb)
   save_image(output_img, args.img_out)
 
