@@ -15,9 +15,6 @@ This repository contains an implementation of Style Transfer using CNNs as a pro
     ```bash
     cd cse575_proj
     ```
-3. Install dependencies:
-stall -r requirements.txt
-    ```
 
 ## Usage
 1. Run the main script:
