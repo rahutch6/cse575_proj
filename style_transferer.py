@@ -105,7 +105,7 @@ def main():
   vgg16(in_tensor) # ; print("block2_conv2 activation shape:", layer_outputs['block5_conv3'].shape)
   print("\tTensor fed to model")
 
-  # WEIGHTS # TODO: TUNE ME
+  # WEIGHTS #
   c_weight                = args.content_weight
   s_weight                = args.style_weight
   total_variation_weight  = args.var_weight
@@ -173,7 +173,6 @@ def main():
     grad_vals = combo_img.grad.cpu().numpy().flatten().astype('float64')
     return current_loss.item(), grad_vals
   
-  # TODO: Document
   class Evaluator(object):
 
     def __init__(self):
@@ -317,7 +316,6 @@ def normalize_rgb(image_arr, avg_rgbs):
     image_arr[:, i, :, :] -= avg_rgbs[i]
 
   # Flip image to BGR as in the paper
-  # Todo: necessary?
   image_arr = image_arr[:, ::-1, :, :]
   return image_arr
 

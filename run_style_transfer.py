@@ -2,10 +2,6 @@
 Simple wrapper script to run the style transferer script on a directory of images.
 Usage: 
   run_style_transferer.py --content_src = <path to content directory> --style_src = <path to style directory>
-
-IMPORTANT: must be exactly as many images in content_src as image_src
-
-For Cuda: conda install pytorch torchvision torchaudio cudatoolkit=11.8 -c pytorch
 '''
 
 import argparse
@@ -17,13 +13,13 @@ def main():
   ''' Run style transferer '''
 
   parser = argparse.ArgumentParser()
-  parser.add_argument('--content_src', '-cs', type=str, default="image_src/content",help="directory of content images")
-  parser.add_argument('--style_src'  , '-ss', type=str, default="image_src/style",help="directory of style images")
+  parser.add_argument('--content_src'   , '-cs', type=str, default="image_src/content",help="directory of content images")
+  parser.add_argument('--style_src'     , '-ss', type=str, default="image_src/style",help="directory of style images")
   parser.add_argument('--content_weight', '-cw' , type=float, default=0.025 , help="content weight")
   parser.add_argument('--style_weight'  , '-sw' , type=float, default=5.0   , help="style weight")
+  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="Variance weight to use")
   parser.add_argument('--iterations'    , '-itr', type=int,   default=10    , help="Num iterations to train")
   parser.add_argument('--gpu_enable'    , '-ge', action="store_true"        , help="Add flag to use GPU")
-  parser.add_argument('--var_weight'    , '-vw' , type=float, default=1.0   , help="Num iterations to train")
 
   args = parser.parse_args()
 
@@ -55,7 +51,6 @@ def main():
     sp_args = ['python', script_ver, '-ci', content_path, '-si', style_paths[idx], 
                 '-io', out_name, '-itr', str(2), '-cw', str(args.content_weight), '-sw', str(args.style_weight), 
                 '-itr', str(args.iterations), '-vw', str(args.var_weight)]
-    # sp.run(sp_args, stdout=sp.PIPE, universal_newlines=True, shell=False)
     command = ' '.join(sp_args)  # Ensure sp_args is a space-separated string
     os.system(command)
   print(f"Style Paths: {style_paths}")
