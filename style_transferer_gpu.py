@@ -4,7 +4,6 @@
 # @author: alcoope8@asu.edu #
 # @author: rahutch6@asu.edu #
 #############################
- # TODO: Delete me: -cw 0.025 -sw 5 -vw 0.2 -itr 9
 # Imports #
 import time
 import numpy as np
@@ -84,7 +83,7 @@ def main():
   # These are the layers of the CNN we need output from
   layers = {
     'block'       : 0,
-    't':1,
+    't'           : 1,
     'block1_conv2': 3,
     'block2_conv2': 6,
     'b7'          : 10,
@@ -189,14 +188,11 @@ def main():
     current_loss.backward()
     grad_vals = combo_img.grad.cpu().numpy().flatten().astype('float64')
     return current_loss.item(), grad_vals
-  # optimizer = torch.optim.LBFGS(
-  #   [combo_img],
-  #   max_iter=20,     
-  #   tolerance_grad=1e-5,
-  #   tolerance_change=1e-9,
-  # )
-  # TODO: Document
+
   class Evaluator(object):
+    '''
+    Object to evaluate the loss and gradients for the optimization process.
+    '''
 
     def __init__(self):
       self.loss_val   = None
@@ -369,7 +365,7 @@ def normalize_rgb(image_arr, avg_rgbs):
     image_arr[:, i, :, :] -= avg_rgbs[i]
 
   # Flip image to BGR as in the paper
-  # Todo: necessary?
+  # Testing has shown this to do very little...
   image_arr = image_arr[:, ::-1, :, :]
   return image_arr
 
